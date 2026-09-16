@@ -5,6 +5,7 @@ import in.abdulmajid.moneylog.expense.model.Expense;
 import jakarta.persistence.criteria.*;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -39,10 +40,10 @@ public class ExpenseSpecification implements Specification<Expense> {
 
         // Month/Year filter
         if (filter.getMonth() != null && filter.getYear() != null) {
-            predicates.add(cb.equal(cb.function("EXTRACT", Integer.class, 
-                cb.literal("MONTH"), root.get("expenseDate")), filter.getMonth()));
-            predicates.add(cb.equal(cb.function("EXTRACT", Integer.class, 
-                cb.literal("YEAR"), root.get("expenseDate")), filter.getYear()));
+            LocalDate firstDay = LocalDate.of(filter.getYear(), filter.getMonth(), 1);
+            LocalDate lastDay = firstDay.withDayOfMonth(firstDay.lengthOfMonth());
+            predicates.add(cb.greaterThanOrEqualTo(root.get("expenseDate"), firstDay));
+            predicates.add(cb.lessThanOrEqualTo(root.get("expenseDate"), lastDay));
         }
 
         // Category filter

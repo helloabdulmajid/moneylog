@@ -10,6 +10,7 @@ import in.abdulmajid.moneylog.category.repository.CategoryRepository;
 import in.abdulmajid.moneylog.category.repository.SubcategoryRepository;
 import in.abdulmajid.moneylog.expense.dto.request.ExpenseFilter;
 import in.abdulmajid.moneylog.expense.dto.request.ExpenseRequest;
+import in.abdulmajid.moneylog.expense.dto.response.EntryHintsResponse;
 import in.abdulmajid.moneylog.expense.dto.response.ExpenseResponse;
 import in.abdulmajid.moneylog.expense.model.Expense;
 import in.abdulmajid.moneylog.expense.repository.ExpenseRepository;
@@ -23,6 +24,7 @@ import in.abdulmajid.moneylog.payment.repository.PaymentAppRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,6 +61,58 @@ public class ExpenseService {
                 .stream()
                 .map(this::toExpenseResponse)
                 .collect(Collectors.toList());
+    }
+
+    public EntryHintsResponse getEntryHints(UUID userId) {
+        EntryHintsResponse.LastUsed lastUsed = expenseRepository
+                .findFirstByUserIdAndIsCreditCardBillPaymentFalseOrderByExpenseDateDescExpenseTimeDesc(userId)
+                .map(e -> EntryHintsResponse.LastUsed.builder()
+                        .paymentMethod(e.getPaymentMethod())
+                        .paymentAppId(e.getPaymentApp() != null ? e.getPaymentApp().getId() : null)
+                        .paymentAccountId(e.getPaymentAccount() != null ? e.getPaymentAccount().getId() : null)
+                        .categoryId(e.getCategory() != null ? e.getCategory().getId() : null)
+                        .subcategoryId(e.getSubcategory() != null ? e.getSubcategory().getId() : null)
+                        .build())
+                .orElse(null);
+
+        Pageable catLimit = PageRequest.of(0, 6);
+        Pageable restLimit = PageRequest.of(0, 4);
+
+        EntryHintsResponse.Frequent frequent = EntryHintsResponse.Frequent.builder()
+                .categories(expenseRepository.findFrequentCategories(userId, catLimit).stream()
+                        .map(row -> CategoryResponse.builder()
+                                .id((UUID) row[0])
+                                .name((String) row[1])
+                                .icon((String) row[2])
+                                .color((String) row[3])
+                                .build())
+                        .collect(Collectors.toList()))
+                .paymentMethods(expenseRepository.findFrequentPaymentMethods(userId, restLimit).stream()
+                        .map(row -> (Expense.PaymentMethod) row[0])
+                        .collect(Collectors.toList()))
+                .apps(expenseRepository.findFrequentPaymentApps(userId, restLimit).stream()
+                        .map(row -> PaymentAppResponse.builder()
+                                .id((UUID) row[0])
+                                .name((String) row[1])
+                                .type((PaymentApp.PaymentAppType) row[2])
+                                .build())
+                        .collect(Collectors.toList()))
+                .accounts(expenseRepository.findFrequentPaymentAccounts(userId, restLimit).stream()
+                        .map(row -> PaymentAccountResponse.builder()
+                                .id((UUID) row[0])
+                                .name((String) row[1])
+                                .type((PaymentAccount.AccountType) row[2])
+                                .bankName((String) row[3])
+                                .lastFourDigits((String) row[4])
+                                .isActive(row[5] != null ? (Boolean) row[5] : null)
+                                .build())
+                        .collect(Collectors.toList()))
+                .build();
+
+        return EntryHintsResponse.builder()
+                .lastUsed(lastUsed)
+                .frequent(frequent)
+                .build();
     }
 
     public ExpenseResponse getExpenseById(UUID userId, UUID expenseId) {

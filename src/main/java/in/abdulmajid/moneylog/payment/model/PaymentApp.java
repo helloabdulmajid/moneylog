@@ -28,6 +28,6 @@ public class PaymentApp extends BaseEntity {
     private PaymentAppType type;
 
     public enum PaymentAppType {
-        UPI, WALLET, BANK_APP, OTHER
+        UPI, WALLET, BANK_APP, PAY_LATER,OTHER
     }
 }

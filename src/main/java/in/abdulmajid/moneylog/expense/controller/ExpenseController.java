@@ -3,6 +3,7 @@ package in.abdulmajid.moneylog.expense.controller;
 import in.abdulmajid.moneylog.common.CurrentUserHelper;
 import in.abdulmajid.moneylog.expense.dto.request.ExpenseFilter;
 import in.abdulmajid.moneylog.expense.dto.request.ExpenseRequest;
+import in.abdulmajid.moneylog.expense.dto.response.EntryHintsResponse;
 import in.abdulmajid.moneylog.expense.dto.response.ExpenseResponse;
 import in.abdulmajid.moneylog.expense.service.ExpenseService;
 import jakarta.validation.Valid;
@@ -66,6 +67,12 @@ public class ExpenseController {
     public ResponseEntity<List<ExpenseResponse>> getRecentExpenses() {
         UUID userId = currentUserHelper.getCurrentUserId();
         return ResponseEntity.ok(expenseService.getRecentExpenses(userId));
+    }
+
+    @GetMapping("/entry-hints")
+    public ResponseEntity<EntryHintsResponse> getEntryHints() {
+        UUID userId = currentUserHelper.getCurrentUserId();
+        return ResponseEntity.ok(expenseService.getEntryHints(userId));
     }
 
     @GetMapping("/{expenseId}")

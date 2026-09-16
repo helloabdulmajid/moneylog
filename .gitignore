@@ -1,4 +1,9 @@
 HELP.md
+backend.log
+
+### Local config with credentials ###
+src/main/resources/application-local.properties
+src/main/resources/application-prod.properties
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
