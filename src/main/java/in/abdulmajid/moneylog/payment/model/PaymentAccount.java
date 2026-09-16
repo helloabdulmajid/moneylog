@@ -36,6 +36,6 @@ public class PaymentAccount extends BaseEntity {
     private Boolean isActive = true;
 
     public enum AccountType {
-        CREDIT_CARD, DEBIT_CARD, BANK_ACCOUNT, WALLET, CASH, OTHER
+        CREDIT_CARD, DEBIT_CARD, BANK_ACCOUNT, WALLET, CASH, OTHER, PAY_LATER
     }
 }
