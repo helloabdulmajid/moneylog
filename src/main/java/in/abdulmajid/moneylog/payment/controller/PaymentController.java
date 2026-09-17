@@ -1,10 +1,10 @@
 package in.abdulmajid.moneylog.payment.controller;
 
 import in.abdulmajid.moneylog.common.CurrentUserHelper;
-import in.abdulmajid.moneylog.payment.dto.request.PaymentAccountRequest;
 import in.abdulmajid.moneylog.payment.dto.request.PaymentAppRequest;
-import in.abdulmajid.moneylog.payment.dto.response.PaymentAccountResponse;
+import in.abdulmajid.moneylog.payment.dto.request.PaymentSourceRequest;
 import in.abdulmajid.moneylog.payment.dto.response.PaymentAppResponse;
+import in.abdulmajid.moneylog.payment.dto.response.PaymentSourceResponse;
 import in.abdulmajid.moneylog.payment.service.PaymentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -50,37 +50,37 @@ public class PaymentController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/accounts")
-    public ResponseEntity<List<PaymentAccountResponse>> getAllPaymentAccounts() {
+    @GetMapping("/sources")
+    public ResponseEntity<List<PaymentSourceResponse>> getAllPaymentSources() {
         UUID userId = currentUserHelper.getCurrentUserId();
-        return ResponseEntity.ok(paymentService.getAllPaymentAccounts(userId));
+        return ResponseEntity.ok(paymentService.getAllPaymentSources(userId));
     }
 
-    @GetMapping("/accounts/active")
-    public ResponseEntity<List<PaymentAccountResponse>> getActivePaymentAccounts() {
+    @GetMapping("/sources/active")
+    public ResponseEntity<List<PaymentSourceResponse>> getActivePaymentSources() {
         UUID userId = currentUserHelper.getCurrentUserId();
-        return ResponseEntity.ok(paymentService.getActivePaymentAccounts(userId));
+        return ResponseEntity.ok(paymentService.getActivePaymentSources(userId));
     }
 
-    @PostMapping("/accounts")
-    public ResponseEntity<PaymentAccountResponse> createPaymentAccount(
-            @Valid @RequestBody PaymentAccountRequest request) {
+    @PostMapping("/sources")
+    public ResponseEntity<PaymentSourceResponse> createPaymentSource(
+            @Valid @RequestBody PaymentSourceRequest request) {
         UUID userId = currentUserHelper.getCurrentUserId();
-        return ResponseEntity.ok(paymentService.createPaymentAccount(userId, request));
+        return ResponseEntity.ok(paymentService.createPaymentSource(userId, request));
     }
 
-    @PutMapping("/accounts/{accountId}")
-    public ResponseEntity<PaymentAccountResponse> updatePaymentAccount(
-            @PathVariable UUID accountId,
-            @Valid @RequestBody PaymentAccountRequest request) {
+    @PutMapping("/sources/{sourceId}")
+    public ResponseEntity<PaymentSourceResponse> updatePaymentSource(
+            @PathVariable UUID sourceId,
+            @Valid @RequestBody PaymentSourceRequest request) {
         UUID userId = currentUserHelper.getCurrentUserId();
-        return ResponseEntity.ok(paymentService.updatePaymentAccount(userId, accountId, request));
+        return ResponseEntity.ok(paymentService.updatePaymentSource(userId, sourceId, request));
     }
 
-    @DeleteMapping("/accounts/{accountId}")
-    public ResponseEntity<Void> deletePaymentAccount(@PathVariable UUID accountId) {
+    @DeleteMapping("/sources/{sourceId}")
+    public ResponseEntity<Void> deletePaymentSource(@PathVariable UUID sourceId) {
         UUID userId = currentUserHelper.getCurrentUserId();
-        paymentService.deletePaymentAccount(userId, accountId);
+        paymentService.deletePaymentSource(userId, sourceId);
         return ResponseEntity.noContent().build();
     }
 }

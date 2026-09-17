@@ -2,6 +2,7 @@ package in.abdulmajid.moneylog.expense.repository;
 
 import in.abdulmajid.moneylog.expense.dto.request.ExpenseFilter;
 import in.abdulmajid.moneylog.expense.model.Expense;
+import in.abdulmajid.moneylog.payment.model.PaymentMethod;
 import jakarta.persistence.criteria.*;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -26,9 +27,6 @@ public class ExpenseSpecification implements Specification<Expense> {
 
         // User filter
         predicates.add(cb.equal(root.get("user").get("id"), userId));
-
-        // Exclude credit card bill payments from regular expense list
-        predicates.add(cb.equal(root.get("isCreditCardBillPayment"), false));
 
         // Date filters
         if (filter.getStartDate() != null) {
@@ -58,8 +56,8 @@ public class ExpenseSpecification implements Specification<Expense> {
 
         // Payment method filter
         if (filter.getPaymentMethod() != null && !filter.getPaymentMethod().isEmpty()) {
-            predicates.add(cb.equal(root.get("paymentMethod"), 
-                Expense.PaymentMethod.valueOf(filter.getPaymentMethod())));
+            predicates.add(cb.equal(root.get("paymentMethod"),
+                PaymentMethod.valueOf(filter.getPaymentMethod())));
         }
 
         // Payment app filter
@@ -67,9 +65,9 @@ public class ExpenseSpecification implements Specification<Expense> {
             predicates.add(cb.equal(root.get("paymentApp").get("id"), filter.getPaymentAppId()));
         }
 
-        // Payment account filter
-        if (filter.getPaymentAccountId() != null) {
-            predicates.add(cb.equal(root.get("paymentAccount").get("id"), filter.getPaymentAccountId()));
+        // Payment source filter
+        if (filter.getPaymentSourceId() != null) {
+            predicates.add(cb.equal(root.get("paymentSource").get("id"), filter.getPaymentSourceId()));
         }
 
         // Split filter

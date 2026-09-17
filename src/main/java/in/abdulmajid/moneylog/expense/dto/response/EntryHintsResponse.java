@@ -1,9 +1,9 @@
 package in.abdulmajid.moneylog.expense.dto.response;
 
 import in.abdulmajid.moneylog.category.dto.response.CategoryResponse;
-import in.abdulmajid.moneylog.expense.model.Expense;
-import in.abdulmajid.moneylog.payment.dto.response.PaymentAccountResponse;
 import in.abdulmajid.moneylog.payment.dto.response.PaymentAppResponse;
+import in.abdulmajid.moneylog.payment.dto.response.PaymentSourceResponse;
+import in.abdulmajid.moneylog.payment.model.PaymentMethod;
 import lombok.Builder;
 import lombok.Data;
 
@@ -20,9 +20,9 @@ public class EntryHintsResponse {
     @Data
     @Builder
     public static class LastUsed {
-        private Expense.PaymentMethod paymentMethod;
+        private PaymentMethod paymentMethod;
         private UUID paymentAppId;
-        private UUID paymentAccountId;
+        private UUID paymentSourceId;
         private UUID categoryId;
         private UUID subcategoryId;
     }
@@ -31,8 +31,8 @@ public class EntryHintsResponse {
     @Builder
     public static class Frequent {
         private List<CategoryResponse> categories;
-        private List<Expense.PaymentMethod> paymentMethods;
+        private List<PaymentMethod> paymentMethods;
         private List<PaymentAppResponse> apps;
-        private List<PaymentAccountResponse> accounts;
+        private List<PaymentSourceResponse> sources;
     }
 }

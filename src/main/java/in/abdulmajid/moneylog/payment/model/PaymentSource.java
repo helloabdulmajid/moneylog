@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "payment_apps", uniqueConstraints = {
+@Table(name = "payment_sources", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"user_id", "name"})
 })
 @Getter
@@ -14,7 +14,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PaymentApp extends BaseEntity {
+public class PaymentSource extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -25,9 +25,17 @@ public class PaymentApp extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private PaymentAppType type;
+    private PaymentSourceType type;
 
-    public enum PaymentAppType {
-        UPI, WALLET, BANK_APP, PAY_LATER, OTHER
+    private String bankName;
+
+    @Column(name = "last_four_digits")
+    private String lastFourDigits;
+
+    @Column(name = "is_active")
+    private Boolean isActive = true;
+
+    public enum PaymentSourceType {
+        BANK_ACCOUNT, CREDIT_CARD, WALLET, CASH
     }
 }

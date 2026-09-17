@@ -33,7 +33,7 @@ public class ExpenseController {
             @RequestParam(required = false) UUID subcategoryId,
             @RequestParam(required = false) String paymentMethod,
             @RequestParam(required = false) UUID paymentAppId,
-            @RequestParam(required = false) UUID paymentAccountId,
+            @RequestParam(required = false) UUID paymentSourceId,
             @RequestParam(required = false) Boolean isSplit,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String sortBy,
@@ -52,7 +52,7 @@ public class ExpenseController {
         filter.setSubcategoryId(subcategoryId);
         filter.setPaymentMethod(paymentMethod);
         filter.setPaymentAppId(paymentAppId);
-        filter.setPaymentAccountId(paymentAccountId);
+        filter.setPaymentSourceId(paymentSourceId);
         filter.setIsSplit(isSplit);
         filter.setSearch(search);
         filter.setSortBy(sortBy);

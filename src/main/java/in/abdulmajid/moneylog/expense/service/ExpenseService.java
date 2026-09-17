@@ -15,12 +15,13 @@ import in.abdulmajid.moneylog.expense.dto.response.ExpenseResponse;
 import in.abdulmajid.moneylog.expense.model.Expense;
 import in.abdulmajid.moneylog.expense.repository.ExpenseRepository;
 import in.abdulmajid.moneylog.expense.repository.ExpenseSpecification;
-import in.abdulmajid.moneylog.payment.dto.response.PaymentAccountResponse;
 import in.abdulmajid.moneylog.payment.dto.response.PaymentAppResponse;
-import in.abdulmajid.moneylog.payment.model.PaymentAccount;
+import in.abdulmajid.moneylog.payment.dto.response.PaymentSourceResponse;
 import in.abdulmajid.moneylog.payment.model.PaymentApp;
-import in.abdulmajid.moneylog.payment.repository.PaymentAccountRepository;
+import in.abdulmajid.moneylog.payment.model.PaymentMethod;
+import in.abdulmajid.moneylog.payment.model.PaymentSource;
 import in.abdulmajid.moneylog.payment.repository.PaymentAppRepository;
+import in.abdulmajid.moneylog.payment.repository.PaymentSourceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -44,7 +45,7 @@ public class ExpenseService {
     private final CategoryRepository categoryRepository;
     private final SubcategoryRepository subcategoryRepository;
     private final PaymentAppRepository paymentAppRepository;
-    private final PaymentAccountRepository paymentAccountRepository;
+    private final PaymentSourceRepository paymentSourceRepository;
 
     public Page<ExpenseResponse> getExpenses(ExpenseFilter filter, UUID userId) {
         Specification<Expense> spec = new ExpenseSpecification(filter, userId);
@@ -57,7 +58,7 @@ public class ExpenseService {
     }
 
     public List<ExpenseResponse> getRecentExpenses(UUID userId) {
-        return expenseRepository.findTop5ByUserIdAndIsCreditCardBillPaymentFalseOrderByExpenseDateDescExpenseTimeDesc(userId)
+        return expenseRepository.findTop5ByUserIdOrderByExpenseDateDescExpenseTimeDesc(userId)
                 .stream()
                 .map(this::toExpenseResponse)
                 .collect(Collectors.toList());
@@ -65,11 +66,11 @@ public class ExpenseService {
 
     public EntryHintsResponse getEntryHints(UUID userId) {
         EntryHintsResponse.LastUsed lastUsed = expenseRepository
-                .findFirstByUserIdAndIsCreditCardBillPaymentFalseOrderByExpenseDateDescExpenseTimeDesc(userId)
+                .findFirstByUserIdOrderByExpenseDateDescExpenseTimeDesc(userId)
                 .map(e -> EntryHintsResponse.LastUsed.builder()
                         .paymentMethod(e.getPaymentMethod())
                         .paymentAppId(e.getPaymentApp() != null ? e.getPaymentApp().getId() : null)
-                        .paymentAccountId(e.getPaymentAccount() != null ? e.getPaymentAccount().getId() : null)
+                        .paymentSourceId(e.getPaymentSource() != null ? e.getPaymentSource().getId() : null)
                         .categoryId(e.getCategory() != null ? e.getCategory().getId() : null)
                         .subcategoryId(e.getSubcategory() != null ? e.getSubcategory().getId() : null)
                         .build())
@@ -88,7 +89,7 @@ public class ExpenseService {
                                 .build())
                         .collect(Collectors.toList()))
                 .paymentMethods(expenseRepository.findFrequentPaymentMethods(userId, restLimit).stream()
-                        .map(row -> (Expense.PaymentMethod) row[0])
+                        .map(row -> (PaymentMethod) row[0])
                         .collect(Collectors.toList()))
                 .apps(expenseRepository.findFrequentPaymentApps(userId, restLimit).stream()
                         .map(row -> PaymentAppResponse.builder()
@@ -97,11 +98,11 @@ public class ExpenseService {
                                 .type((PaymentApp.PaymentAppType) row[2])
                                 .build())
                         .collect(Collectors.toList()))
-                .accounts(expenseRepository.findFrequentPaymentAccounts(userId, restLimit).stream()
-                        .map(row -> PaymentAccountResponse.builder()
+                .sources(expenseRepository.findFrequentPaymentSources(userId, restLimit).stream()
+                        .map(row -> PaymentSourceResponse.builder()
                                 .id((UUID) row[0])
                                 .name((String) row[1])
-                                .type((PaymentAccount.AccountType) row[2])
+                                .type((PaymentSource.PaymentSourceType) row[2])
                                 .bankName((String) row[3])
                                 .lastFourDigits((String) row[4])
                                 .isActive(row[5] != null ? (Boolean) row[5] : null)
@@ -126,6 +127,10 @@ public class ExpenseService {
     public ExpenseResponse createExpense(UUID userId, ExpenseRequest request) {
         User user = userRepository.findById(userId).orElseThrow();
 
+        if (request.getCategoryId() == null) {
+            throw new RuntimeException("Category is required");
+        }
+
         Expense expense = Expense.builder()
                 .user(user)
                 .amount(request.getAmount())
@@ -136,11 +141,10 @@ public class ExpenseService {
                 .purpose(request.getPurpose())
                 .isSplit(request.getIsSplit() != null ? request.getIsSplit() : false)
                 .splitWith(request.getSplitWith())
-                .isCreditCardBillPayment(request.getIsCreditCardBillPayment() != null ? request.getIsCreditCardBillPayment() : false)
                 .build();
 
-        // Set category if provided
-        if (request.getCategoryId() != null) {
+        // Set category (required)
+        {
             Category category = categoryRepository.findById(request.getCategoryId())
                     .filter(c -> c.getUser().getId().equals(userId))
                     .orElseThrow(() -> new RuntimeException("Category not found"));
@@ -163,20 +167,12 @@ public class ExpenseService {
             expense.setPaymentApp(paymentApp);
         }
 
-        // Set payment account if provided
-        if (request.getPaymentAccountId() != null) {
-            PaymentAccount paymentAccount = paymentAccountRepository.findById(request.getPaymentAccountId())
+        // Set payment source if provided
+        if (request.getPaymentSourceId() != null) {
+            PaymentSource paymentSource = paymentSourceRepository.findById(request.getPaymentSourceId())
                     .filter(a -> a.getUser().getId().equals(userId))
-                    .orElseThrow(() -> new RuntimeException("Payment account not found"));
-            expense.setPaymentAccount(paymentAccount);
-        }
-
-        // Set linked expense for credit card bill payments
-        if (request.getLinkedExpenseId() != null) {
-            Expense linkedExpense = expenseRepository.findById(request.getLinkedExpenseId())
-                    .filter(e -> e.getUser().getId().equals(userId))
-                    .orElseThrow(() -> new RuntimeException("Linked expense not found"));
-            expense.setLinkedExpense(linkedExpense);
+                    .orElseThrow(() -> new RuntimeException("Payment source not found"));
+            expense.setPaymentSource(paymentSource);
         }
 
         return toExpenseResponse(expenseRepository.save(expense));
@@ -196,7 +192,6 @@ public class ExpenseService {
         expense.setPurpose(request.getPurpose());
         expense.setIsSplit(request.getIsSplit() != null ? request.getIsSplit() : expense.getIsSplit());
         expense.setSplitWith(request.getSplitWith());
-        expense.setIsCreditCardBillPayment(request.getIsCreditCardBillPayment() != null ? request.getIsCreditCardBillPayment() : expense.getIsCreditCardBillPayment());
 
         // Update category if provided
         if (request.getCategoryId() != null) {
@@ -222,12 +217,12 @@ public class ExpenseService {
             expense.setPaymentApp(paymentApp);
         }
 
-        // Update payment account if provided
-        if (request.getPaymentAccountId() != null) {
-            PaymentAccount paymentAccount = paymentAccountRepository.findById(request.getPaymentAccountId())
+        // Update payment source if provided
+        if (request.getPaymentSourceId() != null) {
+            PaymentSource paymentSource = paymentSourceRepository.findById(request.getPaymentSourceId())
                     .filter(a -> a.getUser().getId().equals(userId))
-                    .orElseThrow(() -> new RuntimeException("Payment account not found"));
-            expense.setPaymentAccount(paymentAccount);
+                    .orElseThrow(() -> new RuntimeException("Payment source not found"));
+            expense.setPaymentSource(paymentSource);
         }
 
         return toExpenseResponse(expenseRepository.save(expense));
@@ -242,48 +237,6 @@ public class ExpenseService {
     }
 
     private ExpenseResponse toExpenseResponse(Expense expense) {
-        return ExpenseResponse.builder()
-                .id(expense.getId())
-                .amount(expense.getAmount())
-                .expenseDate(expense.getExpenseDate())
-                .expenseTime(expense.getExpenseTime())
-                .category(expense.getCategory() != null ? 
-                    CategoryResponse.builder()
-                        .id(expense.getCategory().getId())
-                        .name(expense.getCategory().getName())
-                        .icon(expense.getCategory().getIcon())
-                        .color(expense.getCategory().getColor())
-                        .build() : null)
-                .subcategory(expense.getSubcategory() != null ?
-                    SubcategoryResponse.builder()
-                        .id(expense.getSubcategory().getId())
-                        .name(expense.getSubcategory().getName())
-                        .categoryId(expense.getSubcategory().getCategory().getId())
-                        .build() : null)
-                .paymentMethod(expense.getPaymentMethod())
-                .paymentApp(expense.getPaymentApp() != null ?
-                    PaymentAppResponse.builder()
-                        .id(expense.getPaymentApp().getId())
-                        .name(expense.getPaymentApp().getName())
-                        .type(expense.getPaymentApp().getType())
-                        .build() : null)
-                .paymentAccount(expense.getPaymentAccount() != null ?
-                    PaymentAccountResponse.builder()
-                        .id(expense.getPaymentAccount().getId())
-                        .name(expense.getPaymentAccount().getName())
-                        .type(expense.getPaymentAccount().getType())
-                        .bankName(expense.getPaymentAccount().getBankName())
-                        .lastFourDigits(expense.getPaymentAccount().getLastFourDigits())
-                        .isActive(expense.getPaymentAccount().getIsActive())
-                        .build() : null)
-                .notes(expense.getNotes())
-                .purpose(expense.getPurpose())
-                .isSplit(expense.getIsSplit())
-                .splitWith(expense.getSplitWith())
-                .isCreditCardBillPayment(expense.getIsCreditCardBillPayment())
-                .linkedExpenseId(expense.getLinkedExpense() != null ? expense.getLinkedExpense().getId() : null)
-                .createdAt(expense.getCreatedAt())
-                .updatedAt(expense.getUpdatedAt())
-                .build();
+        return ExpenseResponseMapper.map(expense);
     }
 }

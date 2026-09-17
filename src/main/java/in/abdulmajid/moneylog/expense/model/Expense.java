@@ -4,8 +4,9 @@ import in.abdulmajid.moneylog.auth.model.User;
 import in.abdulmajid.moneylog.category.model.Category;
 import in.abdulmajid.moneylog.category.model.Subcategory;
 import in.abdulmajid.moneylog.common.BaseEntity;
-import in.abdulmajid.moneylog.payment.model.PaymentAccount;
 import in.abdulmajid.moneylog.payment.model.PaymentApp;
+import in.abdulmajid.moneylog.payment.model.PaymentMethod;
+import in.abdulmajid.moneylog.payment.model.PaymentSource;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -17,7 +18,7 @@ import java.time.LocalTime;
 @Table(name = "expenses", indexes = {
     @Index(name = "idx_expenses_user_date", columnList = "user_id, expense_date"),
     @Index(name = "idx_expenses_user_category", columnList = "user_id, category_id"),
-    @Index(name = "idx_expenses_user_account", columnList = "user_id, payment_account_id")
+    @Index(name = "idx_expenses_user_source", columnList = "user_id, payment_source_id")
 })
 @Getter
 @Setter
@@ -40,7 +41,7 @@ public class Expense extends BaseEntity {
     private LocalTime expenseTime;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id")
+    @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -56,8 +57,8 @@ public class Expense extends BaseEntity {
     private PaymentApp paymentApp;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "payment_account_id")
-    private PaymentAccount paymentAccount;
+    @JoinColumn(name = "payment_source_id")
+    private PaymentSource paymentSource;
 
     private String notes;
 
@@ -68,15 +69,4 @@ public class Expense extends BaseEntity {
 
     @Column(name = "split_with")
     private String splitWith;
-
-    @Column(name = "is_credit_card_bill_payment")
-    private Boolean isCreditCardBillPayment = false;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "linked_expense_id")
-    private Expense linkedExpense;
-
-    public enum PaymentMethod {
-        UPI, CREDIT_CARD, DEBIT_CARD, CASH, BANK_TRANSFER, WALLET, OTHER
-    }
 }

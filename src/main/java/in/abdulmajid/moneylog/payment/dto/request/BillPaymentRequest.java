@@ -1,4 +1,4 @@
-package in.abdulmajid.moneylog.expense.dto.request;
+package in.abdulmajid.moneylog.payment.dto.request;
 
 import in.abdulmajid.moneylog.payment.model.PaymentMethod;
 import jakarta.validation.constraints.NotNull;
@@ -11,32 +11,27 @@ import java.time.LocalTime;
 import java.util.UUID;
 
 @Data
-public class ExpenseRequest {
+public class BillPaymentRequest {
+
+    @NotNull(message = "Credit card is required")
+    private UUID creditCardId;
 
     @NotNull(message = "Amount is required")
     @Positive(message = "Amount must be positive")
     private BigDecimal amount;
 
-    private LocalDate expenseDate;
+    @NotNull(message = "Payment date is required")
+    private LocalDate paymentDate;
 
-    private LocalTime expenseTime;
+    private LocalTime paymentTime;
 
-    @NotNull(message = "Category is required")
-    private UUID categoryId;
-
-    private UUID subcategoryId;
-
-    private PaymentMethod paymentMethod;
+    private String paymentChannel;
 
     private UUID paymentAppId;
 
-    private UUID paymentSourceId;
+    private PaymentMethod paymentMethod;
 
-    private String notes;
+    private UUID paidFromSourceId;
 
-    private String purpose;
-
-    private Boolean isSplit;
-
-    private String splitWith;
+    private String note;
 }

@@ -15,7 +15,7 @@ public class ExpenseFilter {
     private UUID subcategoryId;
     private String paymentMethod;
     private UUID paymentAppId;
-    private UUID paymentAccountId;
+    private UUID paymentSourceId;
     private Boolean isSplit;
     private String search;
     private String sortBy;

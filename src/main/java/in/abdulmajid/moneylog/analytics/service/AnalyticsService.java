@@ -64,19 +64,19 @@ public class AnalyticsService {
                     .build());
         }
 
-        // Account breakdown
-        List<Object[]> accountData = expenseRepository.accountBreakdown(userId, startDate, endDate);
-        List<AccountBreakdown> accountBreakdown = new ArrayList<>();
-        for (Object[] row : accountData) {
-            String accountName = (String) row[0];
+        // Source breakdown
+        List<Object[]> sourceData = expenseRepository.sourceBreakdown(userId, startDate, endDate);
+        List<AccountBreakdown> sourceBreakdown = new ArrayList<>();
+        for (Object[] row : sourceData) {
+            String sourceName = (String) row[0];
             BigDecimal total = (BigDecimal) row[1];
             BigDecimal percentage = totalExpense.compareTo(BigDecimal.ZERO) > 0 ?
                     total.divide(totalExpense, 4, RoundingMode.HALF_UP)
                             .multiply(BigDecimal.valueOf(100))
                             .setScale(1, RoundingMode.HALF_UP) :
                     BigDecimal.ZERO;
-            accountBreakdown.add(AccountBreakdown.builder()
-                    .accountName(accountName)
+            sourceBreakdown.add(AccountBreakdown.builder()
+                    .accountName(sourceName)
                     .total(total)
                     .percentage(percentage)
                     .build());
@@ -89,7 +89,7 @@ public class AnalyticsService {
                 .previousMonthTotal(previousMonthTotal)
                 .percentChange(percentChange)
                 .categoryBreakdown(categoryBreakdown)
-                .accountBreakdown(accountBreakdown)
+                .accountBreakdown(sourceBreakdown)
                 .build();
     }
 }

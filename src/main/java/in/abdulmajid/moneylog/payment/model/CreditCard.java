@@ -5,16 +5,18 @@ import in.abdulmajid.moneylog.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
+
 @Entity
-@Table(name = "payment_accounts", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"user_id", "name"})
+@Table(name = "credit_cards", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"user_id", "issuer", "last_four_digits"})
 })
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PaymentAccount extends BaseEntity {
+public class CreditCard extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -23,19 +25,21 @@ public class PaymentAccount extends BaseEntity {
     @Column(nullable = false)
     private String name;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private AccountType type;
-
-    private String bankName;
+    private String issuer;
 
     @Column(name = "last_four_digits")
     private String lastFourDigits;
 
+    @Enumerated(EnumType.STRING)
+    private CardNetwork network;
+
+    @Column(name = "credit_limit", precision = 12, scale = 2)
+    private BigDecimal creditLimit;
+
     @Column(name = "is_active")
     private Boolean isActive = true;
 
-    public enum AccountType {
-        CREDIT_CARD, DEBIT_CARD, BANK_ACCOUNT, WALLET, CASH, OTHER, PAY_LATER
-    }
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_source_id")
+    private PaymentSource paymentSource;
 }
