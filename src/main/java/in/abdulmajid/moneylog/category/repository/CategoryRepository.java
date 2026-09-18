@@ -9,4 +9,5 @@ import java.util.UUID;
 public interface CategoryRepository extends JpaRepository<Category, UUID> {
     List<Category> findByUserIdOrderBySortOrderAsc(UUID userId);
     boolean existsByUserIdAndName(UUID userId, String name);
+    void deleteByUserId(UUID userId);
 }

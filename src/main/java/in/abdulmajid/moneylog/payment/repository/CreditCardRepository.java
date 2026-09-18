@@ -12,4 +12,5 @@ public interface CreditCardRepository extends JpaRepository<CreditCard, UUID> {
     List<CreditCard> findByUserIdAndIsActiveTrueOrderByCreatedAtDesc(UUID userId);
     boolean existsByUserIdAndIssuerAndLastFourDigits(UUID userId, String issuer, String lastFourDigits);
     Optional<CreditCard> findByUserIdAndIssuerAndLastFourDigits(UUID userId, String issuer, String lastFourDigits);
+    void deleteByUserId(UUID userId);
 }

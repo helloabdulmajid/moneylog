@@ -102,4 +102,6 @@ public interface ExpenseRepository extends JpaRepository<Expense, UUID>, JpaSpec
            "e.paymentSource.bankName, e.paymentSource.lastFourDigits, e.paymentSource.isActive " +
            "ORDER BY cnt DESC")
     List<Object[]> findFrequentPaymentSources(@Param("userId") UUID userId, Pageable pageable);
+
+    void deleteByUserId(UUID userId);
 }

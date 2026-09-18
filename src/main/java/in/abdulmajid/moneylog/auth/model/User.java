@@ -21,4 +21,11 @@ public class User extends BaseEntity {
 
     @Column(nullable = false)
     private String name;
+
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean emailVerified = false;
 }

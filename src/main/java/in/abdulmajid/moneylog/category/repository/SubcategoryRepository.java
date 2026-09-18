@@ -9,4 +9,5 @@ import java.util.UUID;
 public interface SubcategoryRepository extends JpaRepository<Subcategory, UUID> {
     List<Subcategory> findByCategoryIdAndUserIdOrderByCategoryId(UUID categoryId, UUID userId);
     boolean existsByCategoryIdAndName(UUID categoryId, String name);
+    void deleteByUserId(UUID userId);
 }

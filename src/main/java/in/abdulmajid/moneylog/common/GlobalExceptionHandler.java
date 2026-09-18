@@ -1,5 +1,6 @@
 package in.abdulmajid.moneylog.common;
 
+import in.abdulmajid.moneylog.auth.exception.EmailNotVerifiedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -22,6 +23,15 @@ public class GlobalExceptionHandler {
         body.put("message", ex.getMessage());
         body.put("status", HttpStatus.BAD_REQUEST.value());
         return ResponseEntity.badRequest().body(body);
+    }
+
+    @ExceptionHandler(EmailNotVerifiedException.class)
+    public ResponseEntity<Map<String, Object>> handleEmailNotVerified(EmailNotVerifiedException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("message", ex.getMessage());
+        body.put("status", HttpStatus.FORBIDDEN.value());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

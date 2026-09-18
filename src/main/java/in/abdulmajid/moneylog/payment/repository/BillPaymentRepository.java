@@ -13,4 +13,5 @@ public interface BillPaymentRepository extends JpaRepository<BillPayment, UUID> 
     Page<BillPayment> findByUserIdAndCreditCardIdOrderByPaymentDateDescPaymentTimeDesc(UUID userId, UUID creditCardId, Pageable pageable);
     Page<BillPayment> findByUserIdAndPaymentDateBetweenOrderByPaymentDateDescPaymentTimeDesc(UUID userId, LocalDate startDate, LocalDate endDate, Pageable pageable);
     Page<BillPayment> findByUserIdAndCreditCardIdAndPaymentDateBetweenOrderByPaymentDateDescPaymentTimeDesc(UUID userId, UUID creditCardId, LocalDate startDate, LocalDate endDate, Pageable pageable);
+    void deleteByUserId(UUID userId);
 }

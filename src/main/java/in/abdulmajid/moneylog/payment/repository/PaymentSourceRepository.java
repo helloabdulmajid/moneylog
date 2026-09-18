@@ -14,6 +14,7 @@ public interface PaymentSourceRepository extends JpaRepository<PaymentSource, UU
     List<PaymentSource> findByUserIdAndIsActiveTrueOrderByNameAsc(UUID userId);
     List<PaymentSource> findByUserIdOrderByNameAsc(UUID userId);
     boolean existsByUserIdAndName(UUID userId, String name);
+    void deleteByUserId(UUID userId);
 
     @Query("SELECT s FROM PaymentSource s " +
            "WHERE s.user.id = :userId AND s.type = :type " +
