@@ -23,7 +23,7 @@ public class UserPreference extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private ThemePreference theme = ThemePreference.SYSTEM;
+    private ThemePreference theme = ThemePreference.LIGHT;
 
     @Column(nullable = false)
     @Builder.Default

@@ -14,15 +14,24 @@ public class MailService {
 
     private static final Logger log = LoggerFactory.getLogger(MailService.class);
 
-    private static final String PRIMARY = "#4c6ef5";
-    private static final String PRIMARY_DARK = "#4263eb";
-    private static final String BG = "#f4f6fb";
-    private static final String CARD = "#ffffff";
-    private static final String TEXT = "#1f2937";
-    private static final String MUTED = "#6b7280";
-    private static final String BORDER = "#e5e7eb";
-    private static final String WARNING_BG = "#fff7f0";
-    private static final String WARNING_BORDER = "#ffd7b0";
+    /* ── Chai Ledger palette ── */
+    private static final String PAPER = "#F6F1E6";
+    private static final String PAPER_DEEP = "#EFE7D8";
+    private static final String CARD = "#FFFDF6";
+    private static final String FOREST = "#1E4637";
+    private static final String FOREST_DARK = "#173B2E";
+    private static final String PINE = "#3E7A63";
+    private static final String MINT = "#E2ECE3";
+    private static final String SAGE = "#ECF1E7";
+    private static final String ROSE = "#F3E2D6";
+    private static final String SIENNA = "#B4501E";
+    private static final String INK = "#211B11";
+    private static final String MUTED = "#6E675A";
+    private static final String BORDER = "#E7E0D0";
+    private static final String CREAM = "#F6F1E6";
+    private static final String MINT_ON_FOREST = "#A7C4B8";
+    private static final String DISPLAY = "'Space Grotesk','Segoe UI',Arial,Helvetica,sans-serif";
+    private static final String LEDGER = "'IBM Plex Mono',Consolas,monospace";
 
     private final JavaMailSender mailSender;
 
@@ -137,36 +146,41 @@ public class MailService {
                 + "<meta name=\"color-scheme\" content=\"light\">"
                 + "<meta name=\"supported-color-schemes\" content=\"light\">"
                 + "<style>"
+                + "@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap');"
                 + "@media only screen and (max-width: 600px) {"
                 + "  .wrapper { width: 100% !important; }"
-                + "  .card { border-radius: 0 !important; }"
-                + "  .features { display: inline-block !important; width: 100% !important; }"
+                + "  .card { border-radius: 14px !important; }"
+                + "  .features { display: inline-block !important; width: 100% !important; border-left: 0 !important; border-top: 1px solid " + BORDER + " !important; }"
+                + "  .features-first { border-top: 0 !important; }"
+                + "  .pad { padding-left: 24px !important; padding-right: 24px !important; }"
                 + "#preview { display: none !important; }"
                 + "}"
                 + "</style>"
                 + "</head>"
-                + "<body style=\"margin:0; padding:0; background:" + BG + ";\" bgcolor=\"" + BG + "\">"
+                + "<body style=\"margin:0; padding:0; background:" + PAPER + ";\" bgcolor=\"" + PAPER + "\">"
                 + "<div id=\"preview\" style=\"display:none; max-height:0; overflow:hidden;\">" + preheader + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>"
-                + "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" bgcolor=\"" + BG + "\" style=\"background:" + BG + ";\">"
+                + "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" bgcolor=\"" + PAPER + "\" style=\"background:" + PAPER + ";\">"
                 + "<tr><td align=\"center\" style=\"padding:32px 16px;\">"
                 + "<table role=\"presentation\" class=\"wrapper\" width=\"600\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"width:600px; max-width:600px;\">"
-                + "<tr><td style=\"padding:0 0 20px 0; text-align:center;\">"
-                + brand()
-                + "</td></tr>"
                 + "<tr><td>"
-                + "<table role=\"presentation\" class=\"card\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"background:" + CARD + "; border:1px solid " + BORDER + "; border-radius:16px; overflow:hidden;\" bgcolor=\"" + CARD + "\">"
+                + "<table role=\"presentation\" class=\"card\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"background:" + CARD + "; border:1px solid " + BORDER + "; border-radius:18px; overflow:hidden;\" bgcolor=\"" + CARD + "\">"
+                + brand()
                 + headerHtml
-                + "<tr><td style=\"padding:8px 40px 0 40px;\">"
+                + "<tr><td class=\"pad\" style=\"padding:6px 40px 0 40px;\">"
                 + heroHtml
                 + "</td></tr>"
-                + (ctaHtml != null ? "<tr><td style=\"padding:24px 40px 0 40px;\">" + ctaHtml + "</td></tr>" : "")
-                + (linkRowHtml != null ? "<tr><td style=\"padding:14px 40px 0 40px;\">" + linkRowHtml + "</td></tr>" : "")
-                + "<tr><td style=\"padding:8px 0 0 0;\">&nbsp;</td></tr>"
+                + (ctaHtml != null ? "<tr><td class=\"pad\" style=\"padding:26px 40px 0 40px;\">" + ctaHtml + "</td></tr>" : "")
+                + (linkRowHtml != null ? "<tr><td class=\"pad\" style=\"padding:16px 40px 0 40px;\">" + linkRowHtml + "</td></tr>" : "")
+                + (footerHtml != null ? "<tr><td class=\"pad\" style=\"padding:10px 40px 4px 40px;\">" + footerHtml + "</td></tr>" : "")
+                + "<tr><td style=\"padding:6px 0 0 0;\">&nbsp;</td></tr>"
                 + "</table>"
                 + "</td></tr>"
-                + "<tr><td style=\"padding:24px 16px 0 16px; text-align:center; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:18px; color:" + MUTED + ";\">"
+                + "<tr><td style=\"padding:24px 16px 0 16px; text-align:center; font-family:" + DISPLAY + "; font-size:12px; line-height:20px; color:" + MUTED + ";\">"
                 + "You received this email because you're registered on MoneyLog.<br>"
                 + "If you have questions, reply to this email and we'll get back to you."
+                + "</td></tr>"
+                + "<tr><td style=\"padding:14px 16px 0 16px; text-align:center; font-family:'IBM Plex Mono',Consolas,monospace; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:" + MUTED + ";\">"
+                + "Every rupee has a story. &middot; &copy; 2026 MoneyLog"
                 + "</td></tr>"
                 + "</table>"
                 + "</td></tr>"
@@ -175,72 +189,84 @@ public class MailService {
     }
 
     private String brand() {
-        return "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" align=\"center\">"
-                + "<tr>"
-                + "<td width=\"34\" height=\"34\" align=\"center\" valign=\"middle\" style=\"border-radius:9px; background:" + PRIMARY + "; font-family:Arial,Helvetica,sans-serif; font-size:17px; font-weight:bold; color:#ffffff;\" bgcolor=\"" + PRIMARY + "\">M</td>"
-                + "<td style=\"padding-left:10px; font-family:Arial,Helvetica,sans-serif; font-size:18px; font-weight:bold; color:" + TEXT + ";\">Money<span style=\"color:" + PRIMARY + ";\">Log</span></td>"
-                + "</tr>"
+        return "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" bgcolor=\"" + FOREST + "\" style=\"background:" + FOREST + ";\">"
+                + "<tr><td align=\"center\" style=\"padding:30px 24px 26px 24px;\">"
+                + "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" align=\"center\">"
+                + "<tr><td width=\"52\" height=\"52\" align=\"center\" valign=\"middle\" style=\"border-radius:13px; background:" + FOREST + "; font-family:" + DISPLAY + "; font-size:28px; font-weight:700; color:" + CREAM + "; line-height:52px;\" bgcolor=\"" + FOREST + "\">M</td></tr>"
+                + "</table>"
+                + "<div style=\"margin-top:12px; font-family:" + DISPLAY + "; font-size:21px; font-weight:700; color:" + CREAM + ";\">MoneyLog</div>"
+                + "<div style=\"display:inline-block; width:38px; height:3px; border-radius:999px; background:" + SIENNA + "; margin-top:10px;\"><div style=\"height:1px;\"></div></div>"
+                + "<div style=\"font-family:" + LEDGER + "; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:" + MINT_ON_FOREST + "; margin-top:10px;\">Every rupee has a story.</div>"
+                + "</td></tr>"
                 + "</table>";
     }
 
     private String buildHeader(String eyebrow, String icon, String iconColor) {
         String badge = badge(icon);
-        return "<tr><td style=\"padding:32px 40px 0 40px;\">"
-                + (badge != null ? "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" align=\"center\"><tr>" + badgeCell(badge, iconColor) + "</tr></table>"
-                        + "<div style=\"text-align:center; font-family:Arial,Helvetica,sans-serif; font-size:12px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:" + MUTED + "; margin-top:16px;\">" + eyebrow + "</div>" : "")
+        return "<tr><td class=\"pad\" style=\"padding:32px 40px 0 40px;\">"
+                + (badge != null ? "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" align=\"center\"><tr>" + badgeCell(badge, iconColor) + "</tr></table>" : "")
+                + "<div style=\"text-align:center; margin-top:18px;\">"
+                + "<span style=\"display:inline-block; font-family:" + LEDGER + "; font-size:11px; font-weight:500; letter-spacing:2px; text-transform:uppercase; color:" + MUTED + "; background:" + PAPER + "; border:1px solid " + BORDER + "; border-radius:999px; padding:7px 15px;\">"
+                + "<span style=\"display:inline-block; width:6px; height:6px; border-radius:50%; background:" + FOREST + "; margin-right:7px; vertical-align:middle;\">&nbsp;</span>"
+                + eyebrow
+                + "</span>"
+                + "</div>"
                 + "</td></tr>";
     }
 
     private String hero(String heading, String body, String extraHtml) {
-        return "<div style=\"text-align:center; font-family:Arial,Helvetica,sans-serif;\">"
-                + "<div style=\"font-size:24px; line-height:32px; font-weight:bold; color:" + TEXT + ";\">" + heading + "</div>"
-                + "<div style=\"font-size:15px; line-height:23px; color:" + MUTED + "; margin-top:14px;\">" + body + "</div>"
+        return "<div style=\"text-align:center;\">"
+                + "<div style=\"font-family:" + DISPLAY + "; font-size:24px; line-height:32px; font-weight:700; color:" + INK + ";\">" + heading + "</div>"
+                + "<div style=\"display:inline-block; width:44px; height:3px; border-radius:999px; background:" + SIENNA + "; margin:14px auto 0 auto;\"><div style=\"height:1px;\"></div></div>"
+                + "<div style=\"font-size:15px; line-height:23px; color:" + MUTED + "; margin-top:16px;\">" + body + "</div>"
                 + (extraHtml != null ? extraHtml : "")
                 + "</div>";
     }
 
     private String primaryCta(String label, String link) {
         return "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" align=\"center\">"
-                + "<tr><td align=\"center\" style=\"border-radius:10px; background:" + PRIMARY + ";\" bgcolor=\"" + PRIMARY + "\">"
-                + "<a href=\"" + link + "\" style=\"display:inline-block; padding:13px 30px; font-family:Arial,Helvetica,sans-serif; font-size:15px; font-weight:bold; color:#ffffff; text-decoration:none; border-radius:10px; background:" + PRIMARY + ";\">" + label + "</a>"
+                + "<tr><td align=\"center\" style=\"border-radius:999px; background:" + FOREST + ";\" bgcolor=\"" + FOREST + "\">"
+                + "<a href=\"" + link + "\" style=\"display:inline-block; padding:14px 32px; font-family:" + DISPLAY + "; font-size:15px; font-weight:700; color:#ffffff; text-decoration:none; border-radius:999px; background:" + FOREST + ";\">" + label + "</a>"
                 + "</td></tr>"
                 + "</table>";
     }
 
     private String fallbackLink(String intro, String link) {
-        return "<div style=\"text-align:center; font-family:Arial,Helvetica,sans-serif; font-size:12px; color:" + MUTED + ";\">"
+        return "<div style=\"text-align:center; font-family:" + DISPLAY + "; font-size:12px; color:" + MUTED + ";\">"
                 + intro + "<br>"
-                + "<a href=\"" + link + "\" style=\"color:" + PRIMARY_DARK + "; text-decoration:none; word-break:break-all; font-weight:bold;\">" + link + "</a>"
+                + "<a href=\"" + link + "\" style=\"color:" + FOREST_DARK + "; text-decoration:none; word-break:break-all; font-weight:600;\">" + link + "</a>"
                 + "</div>";
     }
 
     private String noteBox(String messageHtml, String extraHtml, String icon) {
-        return "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"margin-top:30px; background:" + WARNING_BG + "; border:1px solid " + WARNING_BORDER + "; border-radius:12px;\" bgcolor=\"" + WARNING_BG + "\">"
-                + "<tr><td style=\"padding:16px 18px; font-family:Arial,Helvetica,sans-serif; font-size:13px; line-height:20px; color:#7c4a03;\">"
-                + (icon != null ? iconText(icon) + " " : "")
+        return "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"margin-top:30px; background:" + PAPER_DEEP + "; border:1px solid " + BORDER + "; border-radius:12px;\" bgcolor=\"" + PAPER_DEEP + "\">"
+                + "<tr><td style=\"padding:15px 18px; font-family:" + DISPLAY + "; font-size:13px; line-height:20px; color:" + MUTED + ";\">"
+                + "<span style=\"display:inline-block; width:7px; height:7px; border-radius:50%; background:" + SIENNA + "; margin-right:8px;\">&nbsp;</span>"
                 + messageHtml
-                + (extraHtml != null ? "<div style=\"margin-top:8px;\">" + extraHtml + "</div>" : "")
+                + (extraHtml != null ? "<div style=\"margin-top:8px; padding-top:8px; border-top:1px solid " + BORDER + ";\">" + extraHtml + "</div>" : "")
                 + "</td></tr>"
                 + "</table>";
     }
 
     private String featuresRow() {
         String[][] items = {
-                {"Track expenses", "Record spending the moment it happens."},
-                {"Split bills", "Share costs with friends easily."},
-                {"Stay organized", "Payments, cards and categories in one place."}
+                {"&#8377;", "Track expenses", "Record spending the moment it happens.", MINT, FOREST},
+                {"&#8643;", "Split bills", "Share costs with friends easily.", SAGE, FOREST},
+                {"&#10004;", "Stay organized", "Payments, cards and categories in one place.", ROSE, SIENNA}
         };
         StringBuilder row = new StringBuilder();
         row.append("<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"margin-top:28px; border-top:1px solid " + BORDER + "; border-bottom:1px solid " + BORDER + ";\" >");
         row.append("<tr>");
         boolean first = true;
         for (String[] item : items) {
-            row.append("<td class=\"features\" width=\"33%\" valign=\"top\" style=\"padding:18px 12px; font-family:Arial,Helvetica,sans-serif; text-align:center;");
-            if (!first) row.append(" border-left:1px solid " + BORDER + ";");
+            row.append("<td class=\"features" + (first ? " features-first" : "") + "\" width=\"33%\" valign=\"top\" style=\"padding:20px 12px; font-family:" + DISPLAY + "; text-align:center;");
+            if (!first) {
+                row.append(" border-left:1px solid " + BORDER + ";");
+            }
             row.append("\">");
-            row.append("<div style=\"width:32px; height:32px; margin:0 auto 10px auto; border-radius:8px; background:" + PRIMARY + "; color:#ffffff; font-size:17px; font-weight:bold; text-align:center; line-height:32px;\">" + "&#10004;" + "</div>");
-            row.append("<div style=\"font-size:13px; font-weight:bold; color:" + TEXT + ";\">" + item[0] + "</div>");
-            row.append("<div style=\"font-size:11px; line-height:16px; color:" + MUTED + "; margin-top:4px;\">" + item[1] + "</div>");
+            row.append("<div style=\"width:34px; height:34px; margin:0 auto 10px auto; border-radius:10px; background:" + item[3] + "; color:" + item[4] + "; font-size:18px; font-weight:700; text-align:center; line-height:34px;\">" + item[0] + "</div>");
+            row.append("<div style=\"font-size:13px; font-weight:700; color:" + INK + ";\">" + item[1] + "</div>");
+            row.append("<div style=\"font-size:11px; line-height:16px; color:" + MUTED + "; margin-top:4px;\">" + item[2] + "</div>");
             row.append("</td>");
             first = false;
         }
@@ -261,15 +287,11 @@ public class MailService {
     }
 
     private String badgeCell(String glyph, String iconColor) {
-        String bg = iconColor != null ? iconColor : PRIMARY;
-        return "<td width=\"56\" height=\"56\" align=\"center\" style=\"border-radius:14px; background:" + bg + "; font-family:Arial,Helvetica,sans-serif; font-size:26px; line-height:56px; color:#ffffff;\" bgcolor=\"" + bg + "\">" + glyph + "</td>";
-    }
-
-    private String iconText(String icon) {
-        switch (icon) {
-            case "mail": return "";
-            case "lock": return "";
-            default: return "";
+        String bg = "#E2ECE3";
+        String fg = FOREST;
+        if (iconColor != null) {
+            bg = iconColor;
         }
+        return "<td width=\"52\" height=\"52\" align=\"center\" style=\"border-radius:13px; background:" + bg + "; font-family:" + DISPLAY + "; font-size:24px; line-height:52px; color:" + fg + ";\" bgcolor=\"" + bg + "\">" + glyph + "</td>";
     }
 }
