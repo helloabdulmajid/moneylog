@@ -8,7 +8,7 @@ public class MoneylogApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(MoneylogApplication.class, args);
-		System.out.println("Hey AM, Apps Running....");
+		System.out.println("Hey Buddy,Your Apps Running....");
 	}
 
 }
