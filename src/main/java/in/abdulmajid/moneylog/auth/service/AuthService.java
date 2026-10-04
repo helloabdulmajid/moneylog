@@ -4,28 +4,37 @@ import in.abdulmajid.moneylog.auth.dto.request.LoginRequest;
 import in.abdulmajid.moneylog.auth.dto.request.RegisterRequest;
 import in.abdulmajid.moneylog.auth.dto.response.AuthResponse;
 import in.abdulmajid.moneylog.auth.exception.EmailNotVerifiedException;
+import in.abdulmajid.moneylog.auth.exception.InvalidRefreshTokenException;
 import in.abdulmajid.moneylog.auth.model.EmailVerificationToken;
 import in.abdulmajid.moneylog.auth.model.PasswordResetToken;
+import in.abdulmajid.moneylog.auth.model.Session;
 import in.abdulmajid.moneylog.auth.model.User;
 import in.abdulmajid.moneylog.auth.repository.EmailVerificationTokenRepository;
 import in.abdulmajid.moneylog.auth.repository.PasswordResetTokenRepository;
+import in.abdulmajid.moneylog.auth.repository.SessionRepository;
 import in.abdulmajid.moneylog.auth.repository.UserRepository;
+import in.abdulmajid.moneylog.auth.security.CustomUserDetailsService;
 import in.abdulmajid.moneylog.auth.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
 
     private static final String INVALID_RESET_LINK = "This password reset link is invalid or has expired.";
@@ -42,6 +51,15 @@ public class AuthService {
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final TokenService tokenService;
     private final MailService mailService;
+    private final CustomUserDetailsService userDetailsService;
+    private final SessionRepository sessionRepository;
+    private final SessionService sessionService;
+
+    @Value("${session.inactivity-timeout}")
+    private long sessionInactivityTimeoutMs;
+
+    @Value("${session.absolute-lifetime}")
+    private long sessionAbsoluteLifetimeMs;
 
     @Value("${auth.verification-token-expiration:86400000}")
     private long verificationTokenExpiration;
@@ -69,6 +87,7 @@ public class AuthService {
         return Map.of("message", "Account created. Please verify your email before logging in.");
     }
 
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
@@ -81,8 +100,13 @@ public class AuthService {
             throw new EmailNotVerifiedException("Please verify your email before logging in.");
         }
 
-        String accessToken = jwtTokenProvider.generateAccessToken(userDetails);
-        String refreshToken = jwtTokenProvider.generateRefreshToken(userDetails);
+        UUID sid = UUID.randomUUID();
+
+        String accessToken = jwtTokenProvider.generateAccessToken(userDetails, sid.toString());
+        String refreshToken = jwtTokenProvider.generateRefreshToken(userDetails, sid.toString());
+
+        sessionService.createSession(user, sessionAbsoluteLifetimeMs, "Web/PWA", sid,
+                sessionService.hashVerifier(refreshToken));
 
         return AuthResponse.builder()
                 .accessToken(accessToken)
@@ -91,6 +115,128 @@ public class AuthService {
                 .email(user.getEmail())
                 .name(user.getName())
                 .build();
+    }
+
+    @Transactional
+    public AuthResponse refresh(String refreshToken) {
+        if (!jwtTokenProvider.validateToken(refreshToken)
+                || !jwtTokenProvider.isRefreshToken(refreshToken)) {
+            throw new InvalidRefreshTokenException();
+        }
+
+        String email = jwtTokenProvider.extractEmail(refreshToken);
+        String sid = jwtTokenProvider.extractSessionId(refreshToken);
+
+        if (email == null || sid == null) {
+            throw new InvalidRefreshTokenException();
+        }
+
+        UUID sidUuid;
+        try {
+            sidUuid = UUID.fromString(sid);
+        } catch (IllegalArgumentException e) {
+            throw new InvalidRefreshTokenException();
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(InvalidRefreshTokenException::new);
+
+        if (!Boolean.TRUE.equals(user.getEmailVerified())) {
+            throw new InvalidRefreshTokenException();
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        Session session = sessionRepository.findWithUserBySid(sidUuid)
+                .orElseThrow(InvalidRefreshTokenException::new);
+
+        if (!session.getUser().getId().equals(user.getId())) {
+            log.warn("Auth security event: refresh token user/session mismatch {}", sidUuid);
+            throw new InvalidRefreshTokenException();
+        }
+
+        if (session.getRevokedAt() != null) {
+            throw new InvalidRefreshTokenException();
+        }
+
+        if (now.isAfter(session.getAbsoluteExpirationAt())) {
+            log.info("Auth: refresh rejected, absolute session expired for session {}", sidUuid);
+            throw new InvalidRefreshTokenException();
+        }
+
+        if (now.isAfter(session.getLastActivityAt().plus(sessionInactivityTimeoutMs, ChronoUnit.MILLIS))) {
+            log.info("Auth: refresh rejected, inactivity window elapsed for session {}", sidUuid);
+            throw new InvalidRefreshTokenException();
+        }
+
+        String storedVerifier = session.getRefreshVerifierHash();
+        if (!sessionService.verifierMatches(refreshToken, storedVerifier)) {
+            sessionService.revoke(sidUuid, now);
+            log.warn("Auth security event: refresh-token reuse detected, session revoked {}", sidUuid);
+            throw new InvalidRefreshTokenException();
+        }
+
+        UserDetails userDetails;
+        try {
+            userDetails = userDetailsService.loadUserByUsername(email);
+        } catch (UsernameNotFoundException e) {
+            throw new InvalidRefreshTokenException();
+        }
+
+        String accessToken = jwtTokenProvider.generateAccessToken(userDetails, sid.toString());
+        String newRefreshToken = jwtTokenProvider.generateRefreshToken(userDetails, sid.toString());
+
+        int rotated = sessionRepository.rotateVerifier(
+                sidUuid,
+                storedVerifier,
+                sessionService.hashVerifier(newRefreshToken),
+                now);
+
+        if (rotated == 0) {
+            sessionService.revoke(sidUuid, now);
+            log.warn("Auth security event: concurrent refresh-token reuse, session revoked {}", sidUuid);
+            throw new InvalidRefreshTokenException();
+        }
+
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(newRefreshToken)
+                .tokenType("Bearer")
+                .email(user.getEmail())
+                .name(user.getName())
+                .build();
+    }
+
+    @Transactional
+    public void logout(String refreshToken, String authorizationHeader) {
+        String sid = sessionIdFromToken(refreshToken);
+        if (sid != null) {
+            sessionService.revoke(UUID.fromString(sid), LocalDateTime.now());
+            return;
+        }
+
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            sid = sessionIdFromToken(authorizationHeader.substring(7));
+            if (sid != null) {
+                sessionService.revoke(UUID.fromString(sid), LocalDateTime.now());
+            }
+        }
+    }
+
+    private String sessionIdFromToken(String token) {
+        if (token == null || token.isBlank()) {
+            return null;
+        }
+        String sid = jwtTokenProvider.extractSessionId(token);
+        if (sid == null) {
+            return null;
+        }
+        try {
+            UUID.fromString(sid);
+            return sid;
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     @Transactional

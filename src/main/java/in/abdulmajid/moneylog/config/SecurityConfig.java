@@ -1,6 +1,7 @@
 package in.abdulmajid.moneylog.config;
 
 import in.abdulmajid.moneylog.auth.security.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,6 +29,15 @@ public class SecurityConfig {
             .cors(cors -> {})
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+            .exceptionHandling(exceptionHandling ->
+                exceptionHandling.authenticationEntryPoint(
+                    (request, response, authException) -> {
+                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        response.setContentType("application/json");
+                        response.getWriter().write("{\"message\":\"Unauthorized\"}");
+                    }
+                )
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(

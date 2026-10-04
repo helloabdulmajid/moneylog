@@ -3,6 +3,7 @@ package in.abdulmajid.moneylog.user.service;
 import in.abdulmajid.moneylog.auth.model.User;
 import in.abdulmajid.moneylog.auth.repository.EmailVerificationTokenRepository;
 import in.abdulmajid.moneylog.auth.repository.PasswordResetTokenRepository;
+import in.abdulmajid.moneylog.auth.repository.SessionRepository;
 import in.abdulmajid.moneylog.auth.repository.UserRepository;
 import in.abdulmajid.moneylog.category.repository.CategoryRepository;
 import in.abdulmajid.moneylog.category.repository.SubcategoryRepository;
@@ -12,6 +13,7 @@ import in.abdulmajid.moneylog.payment.repository.CreditCardRepository;
 import in.abdulmajid.moneylog.payment.repository.PaymentAppRepository;
 import in.abdulmajid.moneylog.payment.repository.PaymentSourceRepository;
 import in.abdulmajid.moneylog.user.dto.request.ChangePasswordRequest;
+import in.abdulmajid.moneylog.user.dto.request.DeleteAccountRequest;
 import in.abdulmajid.moneylog.user.dto.request.UpdatePreferencesRequest;
 import in.abdulmajid.moneylog.user.dto.request.UpdateProfileRequest;
 import in.abdulmajid.moneylog.user.dto.response.UserPreferenceResponse;
@@ -42,6 +44,7 @@ public class UserService {
     private final PaymentSourceRepository paymentSourceRepository;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final SessionRepository sessionRepository;
 
     public UserProfileResponse getProfile(UUID userId) {
         return toProfileResponse(getUser(userId));
@@ -98,9 +101,14 @@ public class UserService {
     }
 
     @Transactional
-    public void deleteAccount(UUID userId) {
+    public void deleteAccount(UUID userId, DeleteAccountRequest request) {
         User user = getUser(userId);
 
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            throw new RuntimeException("Current password is incorrect");
+        }
+
+        sessionRepository.deleteByUserId(userId);
         billPaymentRepository.deleteByUserId(userId);
         expenseRepository.deleteByUserId(userId);
         creditCardRepository.deleteByUserId(userId);

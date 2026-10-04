@@ -35,3 +35,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Local AI project memory and development tracking
+plan.md
+workupdate.md

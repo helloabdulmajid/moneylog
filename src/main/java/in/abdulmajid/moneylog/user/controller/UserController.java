@@ -2,6 +2,7 @@ package in.abdulmajid.moneylog.user.controller;
 
 import in.abdulmajid.moneylog.common.CurrentUserHelper;
 import in.abdulmajid.moneylog.user.dto.request.ChangePasswordRequest;
+import in.abdulmajid.moneylog.user.dto.request.DeleteAccountRequest;
 import in.abdulmajid.moneylog.user.dto.request.UpdatePreferencesRequest;
 import in.abdulmajid.moneylog.user.dto.request.UpdateProfileRequest;
 import in.abdulmajid.moneylog.user.dto.response.UserPreferenceResponse;
@@ -57,9 +58,10 @@ public class UserController {
     }
 
     @DeleteMapping
-    public ResponseEntity<Void> deleteAccount() {
+    public ResponseEntity<Void> deleteAccount(
+            @Valid @RequestBody DeleteAccountRequest request) {
         UUID userId = currentUserHelper.getCurrentUserId();
-        userService.deleteAccount(userId);
+        userService.deleteAccount(userId, request);
         return ResponseEntity.noContent().build();
     }
 }
