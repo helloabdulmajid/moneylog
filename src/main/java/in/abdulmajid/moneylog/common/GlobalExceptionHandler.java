@@ -2,6 +2,7 @@ package in.abdulmajid.moneylog.common;
 
 import in.abdulmajid.moneylog.auth.exception.EmailNotVerifiedException;
 import in.abdulmajid.moneylog.auth.exception.InvalidRefreshTokenException;
+import in.abdulmajid.moneylog.feedback.exception.RateLimitExceededException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -63,6 +64,15 @@ public class GlobalExceptionHandler {
         body.put("message", "Validation failed");
 
         return ResponseEntity.badRequest().body(body);
+    }
+
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleRateLimitExceeded(RateLimitExceededException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("message", ex.getMessage());
+        body.put("status", HttpStatus.TOO_MANY_REQUESTS.value());
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(body);
     }
 
     @ExceptionHandler(BadCredentialsException.class)

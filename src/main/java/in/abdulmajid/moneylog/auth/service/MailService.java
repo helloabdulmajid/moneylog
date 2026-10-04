@@ -4,10 +4,14 @@ import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Service
 public class MailService {
@@ -43,6 +47,14 @@ public class MailService {
 
     @Value("${app.mail.log-fallback:false}")
     private boolean logFallback;
+
+    /**
+     * Optional override for the feedback notification recipient, read from the
+     * FEEDBACK_RECIPIENT environment variable. Falls back to app.mail.from when
+     * missing or blank. Applies only to feedback notifications.
+     */
+    @Value("${FEEDBACK_RECIPIENT:}")
+    private String feedbackRecipientOverride;
 
     public MailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
@@ -112,6 +124,157 @@ public class MailService {
                 )
         );
         send(recipientName, recipientEmail, "Reset your password", "Reset your MoneyLog password. This link expires in 1 hour: " + link, body);
+    }
+
+    public MailDeliveryResult sendFeedbackNotification(
+            String reportId,
+            String category,
+            String subject,
+            String description,
+            String stepsToReproduce,
+            String contactEmail,
+            LocalDateTime submittedAt,
+            boolean hasScreenshot,
+            String screenshotFilename,
+            byte[] screenshotBytes,
+            String screenshotMimeType) {
+
+        String recipient = effectiveFeedbackRecipient();
+        String categoryLabel = categoryLabel(category);
+        String safeSubject = stripNewlines(subject);
+        String emailSubject = "MoneyLog Feedback (" + categoryLabel + "): " + safeSubject;
+
+        String body = emailShell(
+                "New feedback received",
+                categoryLabel + " · " + safeSubject,
+                buildHeader("New feedback", "mail", null),
+                hero(
+                        "New feedback received",
+                        "A " + categoryLabel.toLowerCase() + " was submitted through " + baseUrl + ".",
+                        feedbackDetails(new String[][]{
+                                {"Report ID", reportId},
+                                {"Category", categoryLabel},
+                                {"Subject", htmlEscape(safeSubject)},
+                                {"Description", textBlock(description)},
+                                {"Steps to reproduce", stepsToReproduce != null && !stepsToReproduce.isBlank() ? textBlock(stepsToReproduce) : "—"},
+                                {"Contact email", contactEmail != null && !contactEmail.isBlank() ? htmlEscape(contactEmail) : "Not provided"},
+                                {"Submitted", formatDateTime(submittedAt)},
+                                {"Screenshot", hasScreenshot ? htmlEscape(screenshotFilename) : "None"}
+                        })
+                ),
+                null,
+                null,
+                noteBox(
+                        "Screenshots are attached to this notification email only and are not stored on servers.",
+                        "Reply to this email to contact the submitter if a contact email was provided.",
+                        "mail"
+                )
+        );
+
+        String plainText = "MoneyLog feedback (" + categoryLabel + ")\n"
+                + "Report ID: " + reportId + "\n"
+                + "Subject: " + safeSubject + "\n\n"
+                + "Description:\n" + (description != null ? description : "") + "\n\n"
+                + (stepsToReproduce != null && !stepsToReproduce.isBlank() ? "Steps to reproduce:\n" + stepsToReproduce + "\n\n" : "")
+                + "Contact email: " + (contactEmail != null && !contactEmail.isBlank() ? contactEmail : "Not provided") + "\n"
+                + "Submitted: " + formatDateTime(submittedAt) + "\n"
+                + (hasScreenshot ? "Screenshot attached: " + (screenshotFilename != null ? screenshotFilename : "yes") : "");
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom("MoneyLog <" + fromAddress + ">");
+            helper.setTo(recipient);
+            helper.setSubject(emailSubject);
+            helper.setText(plainText, body);
+            if (screenshotBytes != null && screenshotMimeType != null) {
+                helper.addAttachment(safeAttachmentName(screenshotFilename), new ByteArrayResource(screenshotBytes), screenshotMimeType);
+            }
+            mailSender.send(message);
+            return MailDeliveryResult.sent();
+        } catch (MailException | jakarta.mail.MessagingException e) {
+            log.warn("Failed to send feedback notification to {}: {}", recipient, e.getMessage());
+            if (logFallback) {
+                log.info("=== MoneyLog Feedback Email (DEV FALLBACK) ===\nTo: {}\nSubject: {}\nBody:\n{}\n===============================",
+                        recipient, emailSubject, body);
+                return MailDeliveryResult.logged("Email not delivered: dev preview log fallback (written to server log)");
+            }
+            return MailDeliveryResult.failed("Failed to send feedback notification email");
+        }
+    }
+
+    private String effectiveFeedbackRecipient() {
+        if (feedbackRecipientOverride != null && !feedbackRecipientOverride.isBlank()) {
+            return feedbackRecipientOverride.trim();
+        }
+        return fromAddress;
+    }
+
+    private String categoryLabel(String category) {
+        if (category == null) {
+            return "Feedback";
+        }
+        switch (category) {
+            case "BUG_REPORT": return "Bug Report";
+            case "SUGGESTION": return "Suggestion";
+            case "FEATURE_REQUEST": return "Feature Request";
+            case "GENERAL_FEEDBACK": return "General Feedback";
+            default: return "Feedback";
+        }
+    }
+
+    private String safeAttachmentName(String filename) {
+        if (filename == null || filename.isBlank()) {
+            return "screenshot.png";
+        }
+        return filename.replaceAll("[^A-Za-z0-9._-]", "_");
+    }
+
+    private String formatDateTime(LocalDateTime dateTime) {
+        if (dateTime == null) {
+            return "";
+        }
+        return dateTime.format(DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm 'UTC'"));
+    }
+
+    private String htmlEscape(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
+    }
+
+    private String stripNewlines(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\r", " ").replace("\n", " ").trim();
+    }
+
+    private String textBlock(String value) {
+        return htmlEscape(value).replace("\n", "<br>");
+    }
+
+    private String feedbackDetails(String[][] rows) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"margin-top:24px; border:1px solid " + BORDER + "; border-radius:12px; overflow:hidden;\">");
+        boolean alt = false;
+        for (String[] row : rows) {
+            sb.append("<tr" + (alt ? " style=\"background:" + PAPER_DEEP + ";\"" : "") + ">")
+                    .append("<td width=\"160\" valign=\"top\" style=\"padding:11px 14px; font-family:" + LEDGER + "; font-size:10px; letter-spacing:1px; text-transform:uppercase; color:" + MUTED + ";\">")
+                    .append(row[0])
+                    .append("</td>")
+                    .append("<td valign=\"top\" style=\"padding:11px 14px; font-family:" + DISPLAY + "; font-size:14px; line-height:21px; color:" + INK + "; word-break:break-word;\">")
+                    .append(row[1])
+                    .append("</td></tr>");
+            alt = !alt;
+        }
+        sb.append("</table>");
+        return sb.toString();
     }
 
     private void send(String recipientName, String to, String subject, String plainText, String htmlBody) {

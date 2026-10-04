@@ -8,6 +8,7 @@ import in.abdulmajid.moneylog.auth.repository.UserRepository;
 import in.abdulmajid.moneylog.category.repository.CategoryRepository;
 import in.abdulmajid.moneylog.category.repository.SubcategoryRepository;
 import in.abdulmajid.moneylog.expense.repository.ExpenseRepository;
+import in.abdulmajid.moneylog.feedback.repository.FeedbackRepository;
 import in.abdulmajid.moneylog.payment.repository.BillPaymentRepository;
 import in.abdulmajid.moneylog.payment.repository.CreditCardRepository;
 import in.abdulmajid.moneylog.payment.repository.PaymentAppRepository;
@@ -45,6 +46,7 @@ public class UserService {
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final SessionRepository sessionRepository;
+    private final FeedbackRepository feedbackRepository;
 
     public UserProfileResponse getProfile(UUID userId) {
         return toProfileResponse(getUser(userId));
@@ -109,6 +111,7 @@ public class UserService {
         }
 
         sessionRepository.deleteByUserId(userId);
+        feedbackRepository.nullifyUserId(userId);
         billPaymentRepository.deleteByUserId(userId);
         expenseRepository.deleteByUserId(userId);
         creditCardRepository.deleteByUserId(userId);
