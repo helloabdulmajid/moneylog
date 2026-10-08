@@ -33,12 +33,18 @@ public class FeedbackService {
 
     private final FeedbackRepository feedbackRepository;
     private final FeedbackRateLimiter rateLimiter;
+    private final FeedbackDailyRateLimiter dailyRateLimiter;
     private final MailService mailService;
 
     @Transactional
     public FeedbackResponse submit(FeedbackRequest request, MultipartFile screenshot,
                                   User user, String clientIp) {
-        rateLimiter.check(rateLimitKey(user, clientIp));
+        if (user == null) {
+            throw new RuntimeException("Authentication required to submit feedback");
+        }
+        String limitKey = rateLimitKey(user, clientIp);
+        rateLimiter.check(limitKey);
+        dailyRateLimiter.check(limitKey);
 
         byte[] screenshotBytes = null;
         String screenshotFilename = null;

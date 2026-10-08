@@ -52,7 +52,6 @@ public class SecurityConfig {
                 .requestMatchers("/admin/**").hasAuthority("ADMIN")
                 .requestMatchers(
                     "/auth/**",
-                    "/feedback/**",
                     "/feature-flags/**",
                     "/swagger-ui.html",
                     "/swagger-ui/**",

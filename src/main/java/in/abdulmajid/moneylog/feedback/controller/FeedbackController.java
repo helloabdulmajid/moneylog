@@ -30,11 +30,15 @@ public class FeedbackController {
             @RequestPart("data") @Valid FeedbackRequest request,
             @RequestPart(value = "screenshot", required = false) MultipartFile screenshot,
             HttpServletRequest servletRequest) {
+        User user = currentUserOrNull();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(feedbackService.submit(
                         request,
                         screenshot,
-                        currentUserOrNull(),
+                        user,
                         clientIp(servletRequest)));
     }
 
