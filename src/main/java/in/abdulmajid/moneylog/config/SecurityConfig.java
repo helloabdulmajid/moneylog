@@ -1,5 +1,6 @@
 package in.abdulmajid.moneylog.config;
 
+import in.abdulmajid.moneylog.admin.security.AdminJwtAuthenticationFilter;
 import in.abdulmajid.moneylog.auth.security.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -7,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -17,10 +19,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final AdminJwtAuthenticationFilter adminJwtAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -41,8 +45,15 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
+                    "/admin/auth/login",
+                    "/admin/auth/refresh",
+                    "/admin/auth/logout"
+                ).permitAll()
+                .requestMatchers("/admin/**").hasAuthority("ADMIN")
+                .requestMatchers(
                     "/auth/**",
                     "/feedback/**",
+                    "/feature-flags/**",
                     "/swagger-ui.html",
                     "/swagger-ui/**",
                     "/v3/api-docs/**"
@@ -51,6 +62,10 @@ public class SecurityConfig {
             )
             .headers(headers ->
                 headers.frameOptions(frame -> frame.sameOrigin())
+            )
+            .addFilterBefore(
+                adminJwtAuthenticationFilter,
+                UsernamePasswordAuthenticationFilter.class
             )
             .addFilterBefore(
                 jwtAuthenticationFilter,

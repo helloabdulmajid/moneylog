@@ -14,6 +14,8 @@ public class JwtTokenProvider {
 
     public static final String TOKEN_TYPE_ACCESS = "access";
     public static final String TOKEN_TYPE_REFRESH = "refresh";
+    public static final String TOKEN_TYPE_ADMIN_ACCESS = "admin_access";
+    public static final String TOKEN_TYPE_ADMIN_REFRESH = "admin_refresh";
     public static final String CLAIM_TOKEN_TYPE = "type";
     public static final String CLAIM_SESSION_ID = "sid";
 
@@ -25,6 +27,12 @@ public class JwtTokenProvider {
 
     @Value("${jwt.refresh-token-expiration}")
     private long refreshTokenExpiration;
+
+    @Value("${admin.access-token-expiration:1800000}")
+    private long adminAccessTokenExpiration;
+
+    @Value("${admin.refresh-token-expiration:604800000}")
+    private long adminRefreshTokenExpiration;
 
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());
@@ -50,6 +58,36 @@ public class JwtTokenProvider {
                 .expiration(new Date(System.currentTimeMillis() + refreshTokenExpiration))
                 .signWith(getSigningKey())
                 .compact();
+    }
+
+    public String generateAdminAccessToken(String email, String sessionId) {
+        return Jwts.builder()
+                .subject(email)
+                .claim(CLAIM_TOKEN_TYPE, TOKEN_TYPE_ADMIN_ACCESS)
+                .claim(CLAIM_SESSION_ID, sessionId)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + adminAccessTokenExpiration))
+                .signWith(getSigningKey())
+                .compact();
+    }
+
+    public String generateAdminRefreshToken(String email, String sessionId) {
+        return Jwts.builder()
+                .subject(email)
+                .claim(CLAIM_TOKEN_TYPE, TOKEN_TYPE_ADMIN_REFRESH)
+                .claim(CLAIM_SESSION_ID, sessionId)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + adminRefreshTokenExpiration))
+                .signWith(getSigningKey())
+                .compact();
+    }
+
+    public boolean isAdminAccessToken(String token) {
+        return TOKEN_TYPE_ADMIN_ACCESS.equals(extractClaim(token, CLAIM_TOKEN_TYPE));
+    }
+
+    public boolean isAdminRefreshToken(String token) {
+        return TOKEN_TYPE_ADMIN_REFRESH.equals(extractClaim(token, CLAIM_TOKEN_TYPE));
     }
 
     public String extractClaim(String token, String claimName) {

@@ -1,6 +1,6 @@
-package in.abdulmajid.moneylog.auth.repository;
+package in.abdulmajid.moneylog.admin.repository;
 
-import in.abdulmajid.moneylog.auth.model.Session;
+import in.abdulmajid.moneylog.admin.model.AdminSession;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -8,19 +8,18 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface SessionRepository extends JpaRepository<Session, UUID> {
+public interface AdminSessionRepository extends JpaRepository<AdminSession, UUID> {
 
-    @Query("SELECT s FROM Session s JOIN FETCH s.user WHERE s.sid = :sid")
-    Optional<Session> findWithUserBySid(@Param("sid") UUID sid);
+    @Query("SELECT s FROM AdminSession s JOIN FETCH s.admin WHERE s.sid = :sid")
+    Optional<AdminSession> findWithAdminBySid(@Param("sid") UUID sid);
 
     @Transactional
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
-            UPDATE Session s
+            UPDATE AdminSession s
                SET s.refreshVerifierHash = :newVerifier,
                    s.lastActivityAt = :now,
                    s.rotationCount = s.rotationCount + 1
@@ -36,7 +35,7 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
     @Transactional
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
-            UPDATE Session s
+            UPDATE AdminSession s
                SET s.lastActivityAt = :now
              WHERE s.sid = :sid
                AND s.lastActivityAt < :threshold
@@ -49,27 +48,21 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
 
     @Transactional
     @Modifying
-    @Query("DELETE FROM Session s WHERE s.user.id = :userId")
-    void deleteByUserId(@Param("userId") UUID userId);
+    @Query("UPDATE AdminSession s SET s.revokedAt = :now WHERE s.admin.id = :adminId AND s.revokedAt IS NULL")
+    int revokeByAdminId(@Param("adminId") UUID adminId, @Param("now") LocalDateTime now);
 
     @Transactional
     @Modifying
-    @Query("UPDATE Session s SET s.revokedAt = :now WHERE s.user.id = :userId AND s.revokedAt IS NULL")
-    int revokeByUserId(@Param("userId") UUID userId, @Param("now") LocalDateTime now);
-
     @Query("""
-            SELECT s.user.id, count(s)
-              FROM Session s
-             WHERE s.user.id IN :userIds
+            UPDATE AdminSession s
+               SET s.revokedAt = :now
+             WHERE s.admin.id = :adminId
+               AND s.sid <> :keepSid
                AND s.revokedAt IS NULL
-               AND s.lastActivityAt > :threshold
-             GROUP BY s.user.id
             """)
-    List<Object[]> countActiveByUserIds(@Param("userIds") List<UUID> userIds,
-                                        @Param("threshold") LocalDateTime threshold);
-
-    @Query("SELECT s FROM Session s WHERE s.user.id = :userId ORDER BY s.lastActivityAt DESC")
-    List<Session> findByUserIdOrderByLastActivityAtDesc(@Param("userId") UUID userId);
+    int revokeAllExcept(@Param("adminId") UUID adminId,
+                        @Param("keepSid") UUID keepSid,
+                        @Param("now") LocalDateTime now);
 
     long countByRevokedAtIsNullAndLastActivityAtAfter(LocalDateTime threshold);
 }
